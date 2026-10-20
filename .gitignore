@@ -1,0 +1,22 @@
+# Your own data - never commit these
+my-data.js
+state.json
+state.json.unreadable
+state.tmp
+*.tmp
+
+# Private files from older versions (now kept in the .studeck folder in your home folder)
+calendar-links.txt
+feeds-cache.json
+reminders.json
+summary.json
+dashboard.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Tools and system files
+graphify-out/
+.DS_Store
+Thumbs.db

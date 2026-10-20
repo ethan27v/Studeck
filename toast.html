@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Studeck notification</title>
+  <!-- Studeck's notifications: a card in the bottom-right corner, in the
+       dashboard's own colours. The app fills it in with showToast(). -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="toast-page">
+  <div class="tst" id="toast" role="alert">
+    <span class="tst-icon" id="icon"></span>
+    <div class="tst-body">
+      <div class="tst-app"><img src="icons/tray.png" alt=""> Studeck · <span id="kind"></span></div>
+      <div class="tst-title" id="title"></div>
+      <div class="tst-msg" id="msg"></div>
+    </div>
+    <button type="button" class="tst-x" id="close" title="Dismiss" aria-label="Dismiss">✕</button>
+    <i class="tst-timer" id="timer"></i>
+  </div>
+  <script>
+    (() => {
+      'use strict';
+      const $ = (id) => document.getElementById(id);
+      const api = () => (window.pywebview && window.pywebview.api) || null;
+      const svg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+      const ICONS = {
+        clock: svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+        person: svg('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.6 4-5 7-5s5.8 1.4 7 5"/>'),
+        focus: svg('<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M10 3h4"/>'),
+        cup: svg('<path d="M5 9h11v4.5a5.5 5.5 0 0 1-11 0z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2M11 3.5v2"/>'),
+        star: svg('<path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z"/>'),
+        bell: svg('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5h4"/>'),
+      };
+      // kind -> [label, icon, colour]
+      const KINDS = {
+        coursework: ['Deadline', 'clock', 'var(--warn)'],
+        deadline: ['Deadline', 'clock', 'var(--warn)'],
+        interview: ['Interview', 'person', 'var(--c-violet)'],
+        focus: ['Focus', 'focus', 'var(--accent)'],
+        break: ['Break', 'cup', 'var(--ok)'],
+        goal: ['Daily goal', 'star', 'var(--ok)'],
+      };
+      let kind = '', seconds = 8, timer = 0, endsAt = 0, left = 0;
+
+      function finish(open) {
+        clearTimeout(timer);
+        const a = api();
+        if (!a) return;
+        Promise.resolve(open ? a.toast_open(kind) : a.toast_closed()).catch(() => {});
+      }
+      function runTimer(ms) {
+        clearTimeout(timer);
+        endsAt = Date.now() + ms;
+        const bar = $('timer');
+        bar.style.transition = 'none';
+        bar.style.transform = `scaleX(${ms / (seconds * 1000)})`;
+        void bar.offsetWidth; // start the shrink from here
+        bar.style.transition = `transform ${ms}ms linear`;
+        bar.style.transform = 'scaleX(0)';
+        timer = setTimeout(() => finish(false), ms);
+      }
+
+      window.showToast = (note) => {
+        applyTheme();
+        kind = note.kind || '';
+        const [label, icon, colour] = KINDS[kind] || ['Reminder', 'bell', 'var(--accent)'];
+        $('toast').style.setProperty('--k', colour);
+        $('icon').innerHTML = ICONS[icon];
+        $('kind').textContent = label;
+        $('title').textContent = note.title || '';
+        $('msg').textContent = note.message || '';
+        $('toast').classList.remove('in');
+        void $('toast').offsetWidth;
+        $('toast').classList.add('in');
+        runTimer(seconds * 1000);
+      };
+
+      // The mouse on it keeps it there; a moment after it leaves, it goes.
+      $('toast').addEventListener('mouseenter', () => {
+        left = Math.max(0, endsAt - Date.now());
+        clearTimeout(timer);
+        const bar = $('timer');
+        bar.style.transform = getComputedStyle(bar).transform;
+        bar.style.transition = 'none';
+      });
+      $('toast').addEventListener('mouseleave', () => runTimer(Math.max(2500, left)));
+      $('close').addEventListener('click', (e) => { e.stopPropagation(); finish(false); });
+      $('toast').addEventListener('click', () => finish(true));
+
+      // The same colours as the dashboard (Settings → Study & look → Colours).
+      async function applyTheme() {
+        const a = api();
+        if (!a) return;
+        try {
+          const [settings, sys, secs] = await Promise.all([a.get_settings(), a.get_system_theme(), a.get_toast_seconds()]);
+          seconds = Number(secs) || seconds;
+          const wanted = (settings && settings.theme) || 'auto';
+          const name = wanted === 'auto' ? (sys.dark ? 'windows-dark' : 'windows-light') : wanted;
+          document.documentElement.dataset.theme = name;
+          const accent = name === 'windows-dark' ? sys.accentLight : name === 'windows-light' ? sys.accentDark : null;
+          if (/^#[0-9a-f]{6}$/i.test(accent || '')) document.documentElement.style.setProperty('--accent', accent);
+          else document.documentElement.style.removeProperty('--accent');
+        } catch (err) { /* keep the default colours */ }
+      }
+      window.onSettingsChanged = applyTheme;
+      if (api()) applyTheme();
+      else window.addEventListener('pywebviewready', applyTheme);
+    })();
+  </script>
+</body>
+</html>

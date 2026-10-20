@@ -1,0 +1,15 @@
+Ambient sounds for the Study page
+================================
+
+All four recordings are by Joseph SARDIN - BigSoundBank.com, released under
+CC0 1.0 (public domain): https://bigsoundbank.com/licenses.html
+
+They were cut into seamless loops (a few seconds crossfaded where each loop
+wraps around), evened out in volume and saved as Opus at 63 kbps.
+
+  rain.ogg   "Summer Rain on Terrace"         https://bigsoundbank.com/summer-rain-on-terrace-s1019.html
+  waves.ogg  "Small Waves Facing the Ocean"   https://bigsoundbank.com/small-waves-facing-the-ocean-s1046.html
+  fire.ogg   "Fireplace #3"                   https://bigsoundbank.com/fireplace-3-s2855.html
+  cafe.ogg   "Coffee Shop at the Capucins"    https://bigsoundbank.com/coffee-shop-at-the-capucins-s2561.html
+
+"Noise" (brown noise) isn't a file: the dashboard makes it as it plays.

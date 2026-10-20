@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Focus timer</title>
+  <!-- The floating focus timer: a small pill in the corner while a focus
+       session or break runs. Click it to open the Study page. -->
+  <style>
+    :root { --bg: #202020; --text: #ffffff; --muted: #c5c5c5; --track: rgba(255, 255, 255, 0.12); --accent: #4cc2ff; --ok: #6ccb5f; }
+    :root.light { --bg: #f9f9f9; --text: #1b1b1b; --muted: #5c5c5c; --track: rgba(0, 0, 0, 0.1); --accent: #0067c0; --ok: #0f7b0f; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+      background: var(--bg); color: var(--text); user-select: none; cursor: pointer;
+      display: flex; align-items: center; gap: 0.5rem; padding: 0 0.75rem 2px; position: relative;
+    }
+    body.break { --accent: var(--ok); }
+    /* No CSS animations here: this window is on screen for hours, and anything
+       that animates makes it redraw 60 times a second. tick() repaints once a second. */
+    .dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--accent); flex: none; }
+    .dot.dim { opacity: 0.4; }
+    .label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); flex: none; }
+    .time { font-size: 1rem; font-weight: 650; font-variant-numeric: tabular-nums; flex: none; }
+    .subject { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--track); }
+    .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+    body:hover .label::after { content: " · open"; color: var(--muted); font-weight: 600; text-transform: none; letter-spacing: 0; }
+  </style>
+</head>
+<body title="Click to open the Study page">
+  <span class="dot"></span>
+  <span class="label" id="label">Focus</span>
+  <span class="time" id="time">–:––</span>
+  <span class="subject" id="subject"></span>
+  <div class="bar"><i id="fill"></i></div>
+  <script>
+    (() => {
+      'use strict';
+      let state = null;
+      const $ = (id) => document.getElementById(id);
+      const pad = (n) => String(n).padStart(2, '0');
+      function tick() {
+        if (!state || !state.phase) return;
+        const left = Math.max(0, Math.round((state.endsAt - Date.now()) / 1000));
+        const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+        $('time').textContent = h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+        $('fill').style.width = state.length ? `${Math.min(100, (1 - left / state.length) * 100).toFixed(1)}%` : '0';
+        document.querySelector('.dot').classList.toggle('dim', left % 2 === 1);
+      }
+      window.onMini = (s) => {
+        state = s;
+        document.body.classList.toggle('break', s.phase === 'break');
+        $('label').textContent = s.phase === 'break' ? 'Break' : 'Focus';
+        $('subject').textContent = s.phase === 'focus' ? (s.subject || '') : '';
+        tick();
+      };
+      setInterval(tick, 1000);
+      window.addEventListener('pywebviewready', async () => {
+        const api = window.pywebview.api;
+        try {
+          const theme = await api.get_system_theme();
+          document.documentElement.classList.toggle('light', !theme.dark);
+          const accent = theme.dark ? theme.accentLight : theme.accentDark;
+          if (/^#[0-9a-f]{6}$/i.test(accent || '')) document.documentElement.style.setProperty('--accent', accent);
+        } catch (err) { /* keep the default colours */ }
+        try {
+          const snap = await api.get_media();
+          const f = snap && snap.focus;
+          if (f && f.phase) window.onMini({ phase: f.phase, endsAt: f.endsAt, length: f.length, subject: (f.subject || {}).title || '' });
+        } catch (err) { /* updates arrive by themselves */ }
+      });
+      document.addEventListener('click', () => {
+        if (window.pywebview && window.pywebview.api) window.pywebview.api.open_study();
+      });
+    })();
+  </script>
+</body>
+</html>

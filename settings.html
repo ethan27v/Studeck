@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Studeck settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="settings-page">
+  <!-- First-time setup (settings.html?welcome) and the settings window later. -->
+  <div class="st-app">
+    <nav class="st-nav" id="nav" aria-label="Steps"></nav>
+    <main class="st-main">
+      <div class="st-page" id="page" tabindex="-1"></div>
+      <footer class="st-foot" id="foot"></footer>
+    </main>
+  </div>
+  <script>
+    window.__dataError = '';
+    window.addEventListener('error', function (e) {
+      if (e.filename && /data\.js/i.test(e.filename)) window.__dataError = e.message;
+    });
+  </script>
+  <!-- Your data file, for its name / modules / semester as starting points. -->
+  <script src="data.js"></script>
+  <script src="my-data.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

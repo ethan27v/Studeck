@@ -1,0 +1,16 @@
+pywebview>=5.0
+pystray
+pillow
+icalendar
+recurring-ical-events
+tzdata
+certifi
+# Windows: the Study page music player (reads Windows' media controls)
+winrt-runtime; sys_platform == "win32"
+winrt-Windows.Foundation; sys_platform == "win32"
+winrt-Windows.Foundation.Collections; sys_platform == "win32"
+winrt-Windows.Media.Control; sys_platform == "win32"
+winrt-Windows.Storage.Streams; sys_platform == "win32"
+# Mac (beta): window, menu bar and idle-time support
+pyobjc-framework-Cocoa; sys_platform == "darwin"
+pyobjc-framework-Quartz; sys_platform == "darwin"

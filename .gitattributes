@@ -1,0 +1,7 @@
+# Keep line endings right for each platform's scripts.
+*.command text eol=lf
+*.bat     text eol=crlf
+*.ogg     binary
+*.png     binary
+*.ico     binary
+*.icns    binary

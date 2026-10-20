@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Studeck</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Browser preview only: the desktop app slides the whole window instead. -->
+  <div class="hover-zone" id="hoverZone" aria-hidden="true"></div>
+  <main class="demo" id="demo">
+    <p class="demo-arrow" aria-hidden="true">&uarr;</p>
+    <p class="demo-title">Move your mouse to the top edge</p>
+    <p class="demo-sub">This is the browser preview. Run <code>Start Studeck.bat</code> (Windows) or <code>Start Studeck.command</code> (Mac) to get it on your desktop.</p>
+  </main>
+
+  <section class="panel" id="panel" aria-label="Student dashboard">
+    <div class="grid" id="grid">
+      <article class="card overview" id="overview"></article>
+      <article class="card" id="schedule"></article>
+      <article class="card" id="due"></article>
+      <article class="card cw-card" id="coursework"></article>
+      <article class="card" id="week"></article>
+      <article class="card media-card" id="media" aria-label="Now playing"></article>
+    </div>
+  </section>
+
+  <script>
+    // Catch typos in data.js so the dashboard can explain what went wrong.
+    window.__dataError = '';
+    window.addEventListener('error', function (e) {
+      if (!e.filename || !/data\.js/i.test(e.filename)) return;
+      window.__dataFile = /my-data\.js/i.test(e.filename) ? 'my-data.js' : 'data.js';
+      window.__dataError = e.message + (e.lineno ? ' (line ' + e.lineno + ')' : '');
+      // A typo in your own file shows the error, not the sample data underneath.
+      if (window.__dataFile === 'my-data.js') window.DASHBOARD_DATA = null;
+    });
+  </script>
+  <!-- data.js is the sample; your own my-data.js (if there is one) replaces it. -->
+  <script src="data.js"></script>
+  <script src="my-data.js"></script>
+  <script src="importer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

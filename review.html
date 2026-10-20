@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your week</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="summary-page">
+  <!-- The Sunday weekly review. Same data and code as the dashboard. -->
+  <main class="sum" id="summary"></main>
+
+  <script>
+    window.DASHBOARD_MODE = 'summary';
+    window.DASHBOARD_REVIEW = true; // the weekly review
+    window.__dataError = '';
+    window.addEventListener('error', function (e) {
+      if (!e.filename || !/data\.js/i.test(e.filename)) return;
+      window.__dataFile = /my-data\.js/i.test(e.filename) ? 'my-data.js' : 'data.js';
+      window.__dataError = e.message + (e.lineno ? ' (line ' + e.lineno + ')' : '');
+      // A typo in your own file shows the error, not the sample data underneath.
+      if (window.__dataFile === 'my-data.js') window.DASHBOARD_DATA = null;
+    });
+  </script>
+  <!-- data.js is the sample; your own my-data.js (if there is one) replaces it. -->
+  <script src="data.js"></script>
+  <script src="my-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
