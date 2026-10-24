@@ -28,12 +28,46 @@ your weekly classes in once instead. It isn't tied to any one university.
 
 ## Install
 
+### Option 1: download the app (no Python needed)
+
+Download the latest release from the
+[**Releases page**](../../releases/latest):
+
+- **Windows 10/11:** `Studeck-Windows.zip`. Unzip it into a folder you'll keep
+  (e.g. `Documents`), open the `Studeck` folder and double-click `Studeck.exe`.
+  Keep the whole folder together: `Studeck.exe` needs the `_internal` folder
+  next to it.
+  - Studeck isn't signed (that costs money), so the first time Windows
+    SmartScreen may say *"Windows protected your PC"*. Click **More info** →
+    **Run anyway**. It only asks once.
+  - The window is drawn by Microsoft's **WebView2 runtime**, which comes with
+    Windows 11 and up-to-date Windows 10. If nothing appears, install the
+    *Evergreen Bootstrapper* from
+    [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/).
+- **Mac (beta, Apple silicon M1 or newer):** `Studeck-Mac.zip`. Unzip it and
+  drag `Studeck.app` into **Applications** *before* opening it (opened from
+  Downloads, macOS runs it from a temporary copy and *Open at login* won't work).
+  - Studeck isn't signed, so macOS Gatekeeper blocks a plain double-click the
+    first time. **Right-click** (or Control-click) `Studeck.app` → **Open** →
+    **Open**. On macOS 15 (Sequoia) or newer: double-click it, click **Done**,
+    then go to **System Settings → Privacy & Security**, scroll down and click
+    **Open Anyway**. It only asks once.
+  - If macOS says the app *"is damaged"*, open Terminal and run
+    `xattr -cr /Applications/Studeck.app`, then open it again.
+  - Intel Macs: use option 2.
+
+The packaged app keeps everything you enter in the `.studeck` folder in your
+home folder (see [Your data and privacy](#your-data-and-privacy)).
+
+### Option 2: run from source (for developers)
+
 You need **Python 3.10 or newer** from [python.org](https://www.python.org/downloads/)
 (on Windows the Microsoft Store version works too).
 
 1. Download this repository (**Code → Download ZIP** and unzip it, or
    `git clone` it) into a folder you'll keep, e.g. `Documents/Studeck`.
-2. Install the add-ons. Open a terminal in that folder and run:
+2. Install the add-ons (optional: the start files in step 3 install them
+   themselves the first time). Open a terminal in that folder and run:
 
    **Windows**
    ```
@@ -45,7 +79,8 @@ You need **Python 3.10 or newer** from [python.org](https://www.python.org/downl
    ```
 
 3. Start it:
-   - **Windows:** double-click `Start Studeck.bat`. The window is drawn by
+   - **Windows:** double-click `Start Studeck.bat`. It installs the add-ons
+     itself if you skipped step 2. The window is drawn by
      Microsoft's **WebView2 runtime**, which comes with Windows 11 and
      up-to-date Windows 10. If nothing appears, install the *Evergreen
      Bootstrapper* from [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/).
@@ -211,10 +246,12 @@ mode and your accent colour. There are also Dark, Light, **Sage**, **Sand** and
 
 ## Your data and privacy
 
-- **The app folder** holds the app, plus `state.json` (your coursework, plans,
-  ticks and settings) and, if you made one, `my-data.js`. Both are in
-  `.gitignore`, so they never end up in the repository and `git pull` never
-  touches them.
+- **Your own data** is `state.json` (your coursework, plans, ticks and
+  settings) and, if you made one, `my-data.js`. The downloaded app keeps them
+  in the `.studeck` folder below. Run from source, they sit in the app folder
+  instead: both are in `.gitignore`, so they never end up in the repository and
+  `git pull` never touches them. (The first time the downloaded app starts, it
+  copies any `state.json` / `my-data.js` it finds next to it.)
 - **`.studeck` in your home folder** (`%USERPROFILE%\.studeck`
   on Windows, `~/.studeck` on Mac) holds your private calendar links,
   the calendar cache, the log, and the reminder, pop-up and focus timer records.
@@ -230,11 +267,15 @@ setup window take priority over the same things there.
 
 ## Updating and uninstalling
 
-- **Update:** `git pull` in the folder (or download the ZIP again and copy your
-  `state.json` and `my-data.js` across), then quit and restart Studeck.
+- **Update (downloaded app):** quit Studeck, download the latest release and
+  replace the old `Studeck` folder (Windows) or `Studeck.app` (Mac) with the new
+  one, in the same place. Your data in `.studeck` stays.
+- **Update (from source):** `git pull` in the folder (or download the ZIP again
+  and copy your `state.json` and `my-data.js` across), then quit and restart
+  Studeck.
 - **Uninstall:** turn off **Start with Windows** / **Open at login** in the tray /
-  menu bar menu, quit, then delete the app folder and the `.studeck`
-  folder in your home folder.
+  menu bar menu, quit, then delete the app folder (or `Studeck.app`) and the
+  `.studeck` folder in your home folder.
 
 ## Mac (beta)
 
@@ -247,8 +288,8 @@ so please [open an issue](../../issues) with the log
   menu bar), and sits just below the menu bar.
 - The first time it controls Spotify or Music, macOS asks whether it may: say OK.
 - **Open at login** adds a LaunchAgent (`~/Library/LaunchAgents/com.studeck.plist`).
-- If calendar links fail with a certificate error, run *Install
-  Certificates.command* from your Python folder in Applications.
+- Run from source, if calendar links fail with a certificate error, run
+  *Install Certificates.command* from your Python folder in Applications.
 
 A first Mac test, in order: the setup window opens; ⌃⌥D shows and hides the
 panel; the menu bar icon's menu works; a calendar link connects; Spotify's song
@@ -285,6 +326,12 @@ notifications stay (`TOAST_SECONDS`).
 - `docs/`: the README pictures (made-up demo data).
 - Checks: `python -m unittest discover -s tests -v`. GitHub Actions runs them on
   Windows and macOS for every push (`.github/workflows/check.yml`).
+- Packaged app: `python -m pip install pyinstaller`, then
+  `python -m PyInstaller studeck.spec --noconfirm` builds `dist/Studeck/Studeck.exe`
+  (Windows) or `dist/Studeck.app` (Mac). Pushing a `v*` tag
+  (`git tag v1.0.0 && git push origin v1.0.0`) builds both on GitHub Actions and
+  attaches `Studeck-Windows.zip` and `Studeck-Mac.zip` to a release
+  (`.github/workflows/release.yml`).
 - `index.html` (or `index.html?pin` to keep it open) previews the panel in a
   browser; add `?date=2026-10-20&time=10:40` to preview another day.
 

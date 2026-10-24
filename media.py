@@ -123,6 +123,10 @@ class WindowsPlayer:
             import winrt.runtime as rt
             import winrt.windows.media.control as wmc
         except ImportError:
+            if sys.version_info >= (3, 15):
+                raise PlayerUnavailable("The music player's add-on isn't out for Python "
+                                        f"{sys.version_info[0]}.{sys.version_info[1]} yet. "
+                                        "Python 3.14 or older has it.")
             raise PlayerUnavailable("The player needs an add-on: run  python -m pip install -r requirements.txt")
         try:
             rt.init_apartment(rt.MTA)
@@ -554,6 +558,17 @@ class Media:
     def focus_skip(self):
         """End the current focus session or break now."""
         return self._call(self._focus_skip())
+
+    def focus_set_mini(self, on):
+        """Show or hide the small timer in the corner, also while it's running."""
+        return self._call(self._focus_set_mini(bool(on)))
+
+    async def _focus_set_mini(self, on):
+        with self.lock:
+            self.focus["mini"] = on
+            self._save_focus()
+        self._push(force=True)
+        return True
 
     async def _focus_start(self, minutes, break_minutes, pause_for_breaks, subject, mini, goal):
         async with self.focus_busy:

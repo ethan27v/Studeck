@@ -5,12 +5,14 @@ icalendar
 recurring-ical-events
 tzdata
 certifi
-# Windows: the Study page music player (reads Windows' media controls)
-winrt-runtime; sys_platform == "win32"
-winrt-Windows.Foundation; sys_platform == "win32"
-winrt-Windows.Foundation.Collections; sys_platform == "win32"
-winrt-Windows.Media.Control; sys_platform == "win32"
-winrt-Windows.Storage.Streams; sys_platform == "win32"
+# Windows: the Study page music player (reads Windows' media controls).
+# Not on Python 3.15+ yet: there's no ready-made download for it, and building
+# one needs Microsoft's C++ tools. Studeck works without it (no music player).
+winrt-runtime; sys_platform == "win32" and python_version < "3.15"
+winrt-Windows.Foundation; sys_platform == "win32" and python_version < "3.15"
+winrt-Windows.Foundation.Collections; sys_platform == "win32" and python_version < "3.15"
+winrt-Windows.Media.Control; sys_platform == "win32" and python_version < "3.15"
+winrt-Windows.Storage.Streams; sys_platform == "win32" and python_version < "3.15"
 # Mac (beta): window, menu bar and idle-time support
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 pyobjc-framework-Quartz; sys_platform == "darwin"

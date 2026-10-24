@@ -334,6 +334,14 @@ button.sample:hover { background: color-mix(in srgb, var(--warn) 14%, transparen
   padding: 0.12rem 0.55rem; cursor: pointer;
 }
 .head-btn:hover, .head-btn:focus-visible { background: var(--accent); color: var(--on-accent); outline: none; }
+/* Focus timer's "On screen" switch (the corner timer). */
+.head-btn.ft-mini { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--muted); background: var(--chip-bg); }
+.head-btn.ft-mini i { width: 1.35rem; height: 0.75rem; border-radius: 999px; background: var(--track); position: relative; flex: none; }
+.head-btn.ft-mini i::after { content: ""; position: absolute; top: 0.1rem; left: 0.1rem; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--faint); transition: transform 0.15s, background-color 0.15s; }
+.head-btn.ft-mini.on { color: var(--accent); background: var(--accent-soft); }
+.head-btn.ft-mini.on i { background: var(--accent-line); }
+.head-btn.ft-mini.on i::after { transform: translateX(0.6rem); background: var(--accent); }
+.head-btn.ft-mini:hover, .head-btn.ft-mini:focus-visible { background: var(--card-hi); color: var(--text); }
 .cw[data-edit], .task[data-edit] { cursor: pointer; }
 .row-link { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; }
 .row-link:hover { text-decoration: underline; }
@@ -1039,3 +1047,14 @@ body.toast-page { background: var(--panel); cursor: pointer; }
 .tst.in .tst-body, .tst.in .tst-icon { animation: tst-in 0.28s ease-out both; }
 .tst.in .tst-icon { animation-delay: 0.05s; }
 @keyframes tst-in { from { opacity: 0; transform: translateX(10px); } }
+
+/* Narrow timer card (small laptops): the switch drops its words, the ring shrinks. */
+.grid.study #schedule { container-type: inline-size; }
+@container (max-width: 300px) {
+  .head-btn.ft-mini span { display: none; }
+  .head-btn.ft-mini { padding: 0.15rem 0.35rem; }
+  .ft-ring { height: min(100%, 6.6rem); }
+  .ft-mid b { font-size: 1.1rem; }
+  .ft { gap: 0.55rem; }
+  .ft-btns .btn { padding: 0 0.45rem; }
+}

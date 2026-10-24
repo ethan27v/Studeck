@@ -188,12 +188,16 @@ class Desktop:
             subprocess.run(["launchctl", "unload", str(LAUNCH_AGENT)], capture_output=True)
             LAUNCH_AGENT.unlink(missing_ok=True)
             return
+        if getattr(sys, "frozen", False):  # the packaged Studeck.app
+            program, folder = [sys.executable, "--startup"], Path(sys.executable).parent
+        else:
+            program, folder = [sys.executable, str(self.here / "dashboard.py"), "--startup"], self.here
         LAUNCH_AGENT.parent.mkdir(parents=True, exist_ok=True)
         with open(LAUNCH_AGENT, "wb") as f:
             plistlib.dump({
                 "Label": "com.studeck",
-                "ProgramArguments": [sys.executable, str(self.here / "dashboard.py"), "--startup"],
-                "WorkingDirectory": str(self.here),
+                "ProgramArguments": program,
+                "WorkingDirectory": str(folder),
                 "RunAtLoad": True,
                 "ProcessType": "Interactive",
             }, f)

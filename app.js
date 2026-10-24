@@ -1897,6 +1897,14 @@
   const tintCache = new Map(); // album art -> a colour picked from it
 
   const study = () => (data && data.study && typeof data.study === 'object' ? data.study : {});
+  // The small timer in the corner of the screen: this session's choice while the
+  // timer runs, otherwise your setting (Settings → Study & look).
+  function miniOn() {
+    const f = mediaState && mediaState.focus;
+    if (f && f.phase) return f.mini !== false;
+    const s = settings && settings.study && settings.study.miniTimer;
+    return (s != null ? s : study().miniTimer) !== false;
+  }
   const clampInt = (v, lo, hi, dflt) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : dflt; };
   function fmtClock(sec) {
     const s = Math.max(0, Math.round(sec || 0));
@@ -2085,7 +2093,9 @@
           <button type="button" class="btn" data-focus="stop" title="Stop the timer">${mpIcon('stop')}Stop</button>
         </div>`;
     }
-    els.schedule.innerHTML = head('timer', 'Focus timer', meta) + `<div class="card-body ft">${ring}<div class="ft-side">${side}</div></div>`;
+    const mini = miniOn();
+    const miniBtn = apiReady() && st ? `<button type="button" class="head-btn ft-mini${mini ? ' on' : ''}" data-mini-toggle role="switch" aria-checked="${mini}" title="${mini ? 'Showing' : 'Not showing'} a small timer in the corner of your screen while it runs. Click to ${mini ? 'hide' : 'show'} it."><i></i><span>On screen</span></button>` : '';
+    els.schedule.innerHTML = head('timer', 'Focus timer', meta, null, miniBtn) + `<div class="card-body ft">${ring}<div class="ft-side">${side}</div></div>`;
   }
 
   // Minutes focused each day this week, as bars.
@@ -2144,7 +2154,7 @@
   function studyClick(ev) {
     if (ev.target.closest('.editor')) return;
     const api = apiReady() ? window.pywebview.api : null;
-    const b = ev.target.closest('[data-mp], [data-mp-seek], [data-sp-open], [data-focus], [data-focus-len], [data-ambient]');
+    const b = ev.target.closest('[data-mp], [data-mp-seek], [data-sp-open], [data-focus], [data-focus-len], [data-ambient], [data-mini-toggle]');
     if (!b || b.disabled) return;
     const now = mediaState && mediaState.now;
     if (b.dataset.mp && api && now) {
@@ -2165,6 +2175,13 @@
     } else if (b.dataset.spOpen != null) {
       if (api) Promise.resolve(api.open_spotify()).catch(report);
       else window.open('https://open.spotify.com/', '_blank', 'noopener');
+    } else if (b.dataset.miniToggle != null && api) {
+      const on = !miniOn();
+      // Looks instant; the app shows or hides the corner timer and remembers it.
+      if (mediaState && mediaState.focus) mediaState.focus.mini = on;
+      settings = { ...(settings || {}), study: { ...((settings && settings.study) || {}), miniTimer: on } };
+      renderTimer();
+      Promise.resolve(api.set_mini_timer(on)).catch(report);
     } else if (b.dataset.focusLen) {
       focusChoice = Number(b.dataset.focusLen) || 0;
       try { localStorage.setItem('student-dashboard-focus', String(focusChoice)); } catch (err) { /* private mode */ }
@@ -2177,7 +2194,7 @@
       const p = chosenPreset();
       const target = b.dataset.focus === 'start' && focusSubject ? allCoursework().find((c) => c.id === focusSubject) : null;
       Promise.resolve(api.focus(b.dataset.focus, p.f, p.b, false,
-        target ? { id: target.id, title: target.title } : null, study().miniTimer !== false, goalMinutes())).catch(report);
+        target ? { id: target.id, title: target.title } : null, miniOn(), goalMinutes())).catch(report);
     }
   }
   if (panel) panel.addEventListener('click', studyClick);

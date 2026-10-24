@@ -10,6 +10,7 @@ import ctypes
 import ctypes.wintypes as wt
 import logging
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -232,6 +233,13 @@ class Desktop:
         pythonw = exe.with_name("pythonw.exe")
         return pythonw if pythonw.exists() else exe
 
+    def _start_command(self):
+        """What the log-on task runs: the program, its arguments and its folder."""
+        if getattr(sys, "frozen", False):  # the packaged Studeck.exe
+            exe = Path(sys.executable)
+            return exe, "--startup", exe.parent
+        return self._pythonw(), f'"{self.here / "dashboard.py"}" --startup', self.here
+
     def _powershell(self, script):
         return subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
                               capture_output=True, text=True, timeout=60, creationflags=NO_WINDOW)
@@ -241,7 +249,17 @@ class Desktop:
         return result.returncode == 0
 
     def autostart_enabled(self):
-        return self._task_exists(TASK_NAME)
+        if not getattr(sys, "frozen", False):
+            return self._task_exists(TASK_NAME)
+        # The packaged app: only a task that starts this Studeck.exe counts (not one
+        # left by a copy run from source, or from before the folder was moved).
+        result = subprocess.run(["schtasks", "/Query", "/TN", TASK_NAME, "/XML"], capture_output=True,
+                                creationflags=NO_WINDOW)
+        if result.returncode != 0:
+            return False
+        xml = result.stdout.decode("utf-16" if result.stdout[:2] in (b"\xff\xfe", b"\xfe\xff") else "mbcs", "replace")
+        match = re.search(r"<Command>(.*?)</Command>", xml)
+        return bool(match) and os.path.normcase(match.group(1).strip('"')) == os.path.normcase(sys.executable)
 
     def migrate(self):
         """From before the rename: swap a "Student Dashboard" start-up task for a "Studeck" one."""
@@ -260,9 +278,10 @@ class Desktop:
             self._powershell(f"Unregister-ScheduledTask -TaskName '{TASK_NAME}' -Confirm:$false -ErrorAction SilentlyContinue")
             return
         q = lambda p: str(p).replace("'", "''")  # PowerShell single-quote escaping
+        program, arguments, folder = self._start_command()
         script = f"""
 $me = "$env:USERDOMAIN\\$env:USERNAME"
-$action = New-ScheduledTaskAction -Execute '{q(self._pythonw())}' -Argument '"{q(self.here / "dashboard.py")}" --startup' -WorkingDirectory '{q(self.here)}'
+$action = New-ScheduledTaskAction -Execute '{q(program)}' -Argument '{q(arguments)}' -WorkingDirectory '{q(folder)}'
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $me
 $trigger.Delay = 'PT5S'
 $principal = New-ScheduledTaskPrincipal -UserId $me -LogonType Interactive -RunLevel Limited

@@ -20,3 +20,7 @@ __pycache__/
 graphify-out/
 .DS_Store
 Thumbs.db
+
+# PyInstaller build output
+build/
+dist/

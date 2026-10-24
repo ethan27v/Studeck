@@ -33,12 +33,23 @@ import calendars
 import media
 import reminders
 
-HERE = Path(__file__).resolve().parent
 IS_MAC = sys.platform == "darwin"
+# The packaged app (PyInstaller) unpacks its pages, sounds and icons into its own
+# bundle folder; APP_DIR is where people put it (next to Studeck.exe or Studeck.app).
+FROZEN = getattr(sys, "frozen", False)
+if FROZEN:
+    HERE = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)).resolve()
+    APP_DIR = Path(sys.executable).resolve().parents[3 if IS_MAC else 0]
+    for _stream in ("stdout", "stderr"):  # a windowed app has none: don't crash on a stray print
+        if getattr(sys, _stream) is None:
+            setattr(sys, _stream, open(os.devnull, "w"))
+else:
+    HERE = APP_DIR = Path(__file__).resolve().parent
 
 # Private and device-only files (calendar links, calendar cache, log, reminder
 # records) live in a local folder that cloud sync doesn't touch. Your own data
-# (state.json, my-data.js) stays next to the app (both are in .gitignore).
+# (state.json, my-data.js) stays next to the app (both are in .gitignore) - except
+# in the packaged app, whose folder may be read-only: there it lives here too.
 DATA_DIR = Path(os.environ.get("USERPROFILE") or Path.home()) / ".studeck"
 _OLD_DATA_DIR = DATA_DIR.with_name(".student-dashboard")  # before the app was called Studeck
 if _OLD_DATA_DIR.is_dir() and not DATA_DIR.exists():
@@ -49,12 +60,21 @@ if _OLD_DATA_DIR.is_dir() and not DATA_DIR.exists():
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 PRIVATE_FILES = ["calendar-links.txt", "feeds-cache.json", "reminders.json", "summary.json", "dashboard.log"]
 for _name in PRIVATE_FILES:  # move them out of the app folder (once, from older versions)
-    _src, _dst = HERE / _name, DATA_DIR / _name
+    _src, _dst = APP_DIR / _name, DATA_DIR / _name
     if _src.exists() and not _dst.exists():
         try:
             shutil.move(str(_src), str(_dst))
         except OSError:
             pass
+USER_DIR = DATA_DIR if FROZEN else HERE
+if FROZEN:
+    for _name in ("state.json", "my-data.js"):  # from a copy run from source here before (once)
+        _src, _dst = APP_DIR / _name, USER_DIR / _name
+        if _src.exists() and not _dst.exists():
+            try:
+                shutil.copyfile(_src, _dst)
+            except OSError:
+                pass
 
 logging.basicConfig(
     filename=DATA_DIR / "dashboard.log",
@@ -91,13 +111,41 @@ NEAR_TOP_PX = 200
 
 APP_NAME = "Studeck"
 ICONS = HERE / "icons"
-STATE_FILE = HERE / "state.json"
+STATE_FILE = USER_DIR / "state.json"
 # data.js is the sample shipped with the app; my-data.js (your copy, kept out
 # of git) replaces it once it exists. Most people never need it: the setup
 # window covers names, modules, semesters and preferences.
 SAMPLE_DATA_FILE = HERE / "data.js"
-USER_DATA_FILE = HERE / "my-data.js"
-WATCHED_FILES = ["my-data.js", "data.js", "app.js", "styles.css", "index.html"]
+USER_DATA_FILE = USER_DIR / "my-data.js"
+WATCHED_FILES = [USER_DATA_FILE, SAMPLE_DATA_FILE, HERE / "app.js", HERE / "styles.css", HERE / "index.html"]
+# The pages load my-data.js from their own folder. The packaged app keeps it in
+# DATA_DIR, so it shows the pages from a copy there, with my-data.js beside them.
+WEB_DIR = DATA_DIR / "web" if FROZEN else HERE
+WEB_FILES = ["index.html", "app.js", "importer.js", "styles.css", "data.js", "settings.html", "settings.js",
+             "summary.html", "review.html", "mini.html", "toast.html", "icons/tray.png"]
+
+
+def copy_web_files():
+    """Packaged app: refresh the copy of the pages (they change with each version)."""
+    if not FROZEN:
+        return
+    for name in WEB_FILES:
+        (WEB_DIR / name).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(HERE / name, WEB_DIR / name)
+    copy_user_data()
+
+
+def copy_user_data():
+    """Packaged app: put the current my-data.js (or none) beside the pages."""
+    if not FROZEN:
+        return
+    try:
+        if USER_DATA_FILE.exists():
+            shutil.copyfile(USER_DATA_FILE, WEB_DIR / "my-data.js")
+        else:
+            (WEB_DIR / "my-data.js").unlink(missing_ok=True)
+    except OSError:
+        logging.exception("could not copy %s", USER_DATA_FILE)
 
 
 def panel_height(area_height, scale):
@@ -396,11 +444,11 @@ class Dashboard:
     def watch_loop(self):
         def mtimes():
             out = {}
-            for name in WATCHED_FILES:
+            for path in WATCHED_FILES:
                 try:
-                    out[name] = (HERE / name).stat().st_mtime
+                    out[path] = path.stat().st_mtime
                 except OSError:
-                    out[name] = None
+                    out[path] = None
             return out
 
         last = mtimes()
@@ -409,6 +457,7 @@ class Dashboard:
             if current != last:
                 last = current
                 time.sleep(0.2)  # let the editor finish writing
+                copy_user_data()
                 logging.info("files changed - reloading")
                 self.js("location.reload()")
 
@@ -500,7 +549,7 @@ class Dashboard:
         import webview
         win = webview.create_window(
             "Focus timer",
-            url=(HERE / "mini.html").as_uri(),
+            url=(WEB_DIR / "mini.html").as_uri(),
             js_api=Api(),
             width=MINI_SIZE[0], height=MINI_SIZE[1], x=-20000, y=-20000, min_size=(60, 20),
             frameless=True, easy_drag=False, shadow=False, resizable=False,
@@ -560,7 +609,7 @@ class Dashboard:
     def show_summary(self, review=False):
         """The daily "Today at a glance" pop-up, or (review=True) the weekly review."""
         # (No "?..." on file addresses: pywebview treats it as part of the file name.)
-        url = (HERE / ("review.html" if review else "summary.html")).as_uri()
+        url = (WEB_DIR / ("review.html" if review else "summary.html")).as_uri()
         title = "Your week" if review else "Today at a glance"
         with self.summary_lock:
             if self.summary_window is not None:
@@ -611,7 +660,7 @@ class Dashboard:
             width, height = window_size(940, 680)
             win = webview.create_window(
                 "Set up Studeck" if first_run else "Studeck settings",
-                url=(HERE / "settings.html").as_uri(),
+                url=(WEB_DIR / "settings.html").as_uri(),
                 js_api=Api(),
                 width=width, height=height, min_size=(min(640, width), min(480, height)),
                 background_color="#202020",
@@ -693,7 +742,7 @@ class Dashboard:
             self.toast_ready.clear()
             win = webview.create_window(
                 "Studeck notification",
-                url=(HERE / "toast.html").as_uri(),
+                url=(WEB_DIR / "toast.html").as_uri(),
                 js_api=Api(),
                 width=TOAST_SIZE[0], height=TOAST_SIZE[1], x=-20000, y=-20000, min_size=(60, 20),
                 frameless=True, easy_drag=False, shadow=False, resizable=False,
@@ -1115,6 +1164,21 @@ class Api:
             return _dashboard.media.focus_skip()
         return False
 
+    def set_mini_timer(self, on):
+        """The Focus timer card's "On screen" switch: the small timer in the corner,
+        shown or hidden at once and remembered (Settings → Study & look too)."""
+        on = bool(on)
+        with _state_lock:
+            state = read_state()
+            settings = state.get("settings") or {}
+            settings["study"] = dict(settings.get("study") or {}, miniTimer=on)
+            state["settings"] = _clean_settings(settings)
+            write_state(state)
+        if _dashboard is not None:
+            _dashboard.media.focus_set_mini(on)
+            _dashboard.on_settings_changed()
+        return True
+
     def open_url(self, url):
         """Open a link in your normal browser."""
         url = str(url or "").strip()
@@ -1296,13 +1360,14 @@ def main():
     # Load the calendar libraries now, before the window exists, so the background
     # sync never imports them while the window is being built.
     calendars.warm_up()
+    copy_web_files()
 
     import webview
 
     _dashboard = dash = Dashboard()
     dash.window = webview.create_window(
         APP_NAME,
-        url=(HERE / "index.html").as_uri(),
+        url=(WEB_DIR / "index.html").as_uri(),
         js_api=Api(),
         width=1200, height=240, x=-20000, y=-20000,
         frameless=True,
