@@ -319,7 +319,9 @@ Register-ScheduledTask -TaskName '{TASK_NAME}' -Description 'Starts Studeck when
         if self.hotkey_thread_id:
             user32.PostThreadMessageW(self.hotkey_thread_id, WM_QUIT, 0, 0)
 
-    def run_tray(self, icon, on_ready):
+    def run_tray(self, make_icon, on_ready):
+        icon = make_icon()
+
         def setup(icon_):
             icon_.visible = True
             on_ready()
@@ -390,6 +392,9 @@ Register-ScheduledTask -TaskName '{TASK_NAME}' -Description 'Starts Studeck when
             window.native.BeginInvoke(Action(lambda: window.native.browser.webview.Focus()))
         except Exception:
             logging.debug("could not focus the page", exc_info=True)
+
+    def bring_to_front(self, window):
+        pass  # Windows already opens new windows in front
 
     def release_startup_focus(self, stopping, is_visible):
         # The window gets activated when it's created; give focus back to whatever

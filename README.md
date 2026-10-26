@@ -62,7 +62,8 @@ home folder (see [Your data and privacy](#your-data-and-privacy)).
 ### Option 2: run from source (for developers)
 
 You need **Python 3.10 or newer** from [python.org](https://www.python.org/downloads/)
-(on Windows the Microsoft Store version works too).
+(on Windows the Microsoft Store version works too; on a Mac, Homebrew's works
+too, but the `python3` that comes with macOS is 3.9, which is too old).
 
 1. Download this repository (**Code → Download ZIP** and unzip it, or
    `git clone` it) into a folder you'll keep, e.g. `Documents/Studeck`.
@@ -73,9 +74,11 @@ You need **Python 3.10 or newer** from [python.org](https://www.python.org/downl
    ```
    python -m pip install -r requirements.txt
    ```
-   **Mac**
+   **Mac** (the add-ons go in a `.venv` folder inside Studeck's folder, which is
+   what the start file uses)
    ```
-   python3 -m pip install -r requirements.txt
+   python3 -m venv .venv
+   .venv/bin/python -m pip install -r requirements.txt
    ```
 
 3. Start it:
@@ -86,7 +89,11 @@ You need **Python 3.10 or newer** from [python.org](https://www.python.org/downl
      Bootstrapper* from [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/).
    - **Mac:** double-click `Start Studeck.command` (the first time, macOS may
      say it can't check it: right-click it → **Open** → **Open**). It installs
-     the add-ons itself if you skipped step 2.
+     the add-ons itself if you skipped step 2. Or, in a terminal in the folder:
+     `.venv/bin/python dashboard.py`.
+     - If macOS says you *don't have appropriate access privileges* (this
+       happens when the folder was copied over from a Windows PC), open
+       Terminal in the folder and run `chmod +x "Start Studeck.command"`.
 
 ## First-time setup
 

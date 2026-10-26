@@ -8,6 +8,9 @@
   const PALETTE = ['coral', 'amber', 'mint', 'sky', 'violet', 'rose', 'lime', 'slate'];
   const STORE_KEY = 'student-dashboard-state';
   const SOON_DAYS = 14; // "Due soon" looks two weeks ahead
+  const PASTE_HINT = /Mac/.test(navigator.platform || navigator.userAgent)
+    ? 'Copy a schedule (⌘C), click the box below and press ⌘V.'
+    : 'Copy a schedule (Ctrl+C), click the box below and press Ctrl+V.';
 
   const ICONS = {
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -1555,7 +1558,7 @@
       <header class="ed-head">
         <h2 class="card-title">Add coursework</h2>
         ${modeSwitch('paste')}
-        <span class="ed-msg">Copy a schedule (Ctrl+C), click the box below and press Ctrl+V.</span>
+        <span class="ed-msg">${PASTE_HINT}</span>
         <button type="button" class="ed-x" data-ed="cancel" aria-label="Close">✕</button>
       </header>
       <div class="imp-paste-wrap">
@@ -1637,7 +1640,7 @@
       isLink ? text.trim() : '', fileName);
   }
 
-  // Import .ics file: Windows' Open dialog comes from the desktop app.
+  // Import .ics file: the system's Open dialog comes from the desktop app.
   function pickIcs() {
     const api = window.pywebview && window.pywebview.api;
     if (!api || !api.pick_ics) { editor.el.querySelector('.imp-file').click(); return; } // browser preview
@@ -1661,7 +1664,7 @@
       res = { error: "Couldn't read that calendar." };
     }
     if (!editor || editor.icsTicket !== ticket || !editor.el.querySelector('.imp-paste')) return; // closed or moved on
-    if (res && res.cancelled) return importMessage('Copy a schedule (Ctrl+C), click the box below and press Ctrl+V.');
+    if (res && res.cancelled) return importMessage(PASTE_HINT);
     if (!res || res.error) return importMessage((res && res.error) || "Couldn't read that calendar.", true);
     fileName = fileName || res.file || '';
     const { rows, classes } = window.ScheduleImport.fromEvents(res.events || [], { today: startOfDay(now()) });

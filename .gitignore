@@ -24,3 +24,6 @@ Thumbs.db
 # PyInstaller build output
 build/
 dist/
+
+# Studeck's own Python environment on a Mac (made by "Start Studeck.command")
+.venv/

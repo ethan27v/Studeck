@@ -486,6 +486,11 @@ class Dashboard:
                     return
             desktop.open_text_file(USER_DATA_FILE)
 
+        def in_thread(fn):
+            # pywebview only opens a window when asked from a thread other than the
+            # main one, and on a Mac the menu bar icon's clicks arrive on the main thread.
+            return lambda icon, item: threading.Thread(target=fn, daemon=True).start()
+
         def toggle_autostart(icon, item):
             try:
                 desktop.set_autostart(not desktop.autostart_enabled())
@@ -494,10 +499,10 @@ class Dashboard:
 
         menu = pystray.Menu(
             pystray.MenuItem(f"Show dashboard   {desktop.keys['toggle']}", lambda icon, item: self.requests.put("show"), default=True),
-            pystray.MenuItem("Settings…", lambda icon, item: self.show_settings()),
+            pystray.MenuItem("Settings…", in_thread(self.show_settings)),
             pystray.MenuItem("Refresh calendars now", lambda icon, item: self.feeds.trigger()),
-            pystray.MenuItem("Today at a glance", lambda icon, item: self.show_summary()),
-            pystray.MenuItem("Weekly review", lambda icon, item: self.show_summary(review=True)),
+            pystray.MenuItem("Today at a glance", in_thread(self.show_summary)),
+            pystray.MenuItem("Weekly review", in_thread(lambda: self.show_summary(review=True))),
             pystray.MenuItem("Deadline reminders", lambda icon, item: self.reminders.set_enabled(not self.reminders.enabled),
                              checked=lambda item: self.reminders.enabled),
             pystray.MenuItem("Daily summary pop-up", lambda icon, item: set_summary_enabled(not summary_enabled()),
@@ -509,8 +514,11 @@ class Dashboard:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", lambda icon, item: self.quit()),
         )
-        self.tray = pystray.Icon("Studeck", img, APP_NAME, menu)
-        desktop.run_tray(self.tray, self.tray_ready.set)
+
+        def make_icon():
+            self.tray = pystray.Icon("Studeck", img, APP_NAME, menu)
+            return self.tray
+        desktop.run_tray(make_icon, self.tray_ready.set)
 
     # -- updates pushed to the page
     def on_feeds_updated(self):
@@ -668,6 +676,7 @@ class Dashboard:
                 zoomable=False,
             )
             win.events.closed += self._settings_closed
+            win.events.shown += lambda *a: desktop.bring_to_front(win)
             self.settings_window = win
         logging.info("showing settings%s", " (first run)" if first_run else "")
 

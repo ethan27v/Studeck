@@ -105,6 +105,8 @@ class Desktop:
         self._lock = None
         self._hotkey_refs = []
         self._handler = None
+        # pywebview brings Studeck to the front as it starts; focus goes back here.
+        self.startup_app = AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
 
     # -- the app
     def single_instance(self):
@@ -217,7 +219,7 @@ class Desktop:
             try:
                 _carbon = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/Carbon.framework/Carbon")
                 _carbon.GetApplicationEventTarget.restype = ctypes.c_void_p
-                _carbon.InstallEventHandler.argtypes = [ctypes.c_void_p, _HANDLER, ctypes.c_uint32,
+                _carbon.InstallEventHandler.argtypes = [ctypes.c_void_p, _HANDLER, ctypes.c_ulong,  # ItemCount
                                                         ctypes.POINTER(_EventTypeSpec), ctypes.c_void_p, ctypes.c_void_p]
                 _carbon.RegisterEventHotKey.argtypes = [ctypes.c_uint32, ctypes.c_uint32, _EventHotKeyID,
                                                         ctypes.c_void_p, ctypes.c_uint32, ctypes.POINTER(ctypes.c_void_p)]
@@ -252,10 +254,13 @@ class Desktop:
     def stop_hotkeys(self):
         pass
 
-    def run_tray(self, icon, on_ready):
+    def run_tray(self, make_icon, on_ready):
+        # The menu bar icon is AppKit, so it's made and shown on the main thread.
+        # (Its menu callbacks run there too: see Dashboard.start_tray.)
         def start():
             try:
-                icon.run_detached()
+                icon = make_icon()
+                icon.run_detached(setup=lambda icon_: None)  # (the default setup shows it from another thread)
                 icon.visible = True
             except Exception:
                 logging.exception("could not add the menu bar icon")
@@ -314,14 +319,44 @@ class Desktop:
             window.native.makeKeyAndOrderFront_(None)
         _on_main(activate)
 
+    def bring_to_front(self, window):
+        """A menu bar app's new windows open behind the app you're using: bring
+        this one (the setup window) to the front."""
+        def front():
+            AppKit.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+            window.native.makeKeyAndOrderFront_(None)
+        _on_main(front)
+
     def release_startup_focus(self, stopping, is_visible):
-        pass
+        # pywebview made Studeck the active app as it started: hand that back,
+        # unless one of Studeck's windows has been brought forward since.
+        stopping.wait(0.5)
+        app = self.startup_app
+
+        def give_back():
+            ns_app = AppKit.NSApplication.sharedApplication()
+            if ns_app.isActive() and ns_app.keyWindow() is None and not is_visible():
+                app.activateWithOptions_(0)
+        if app is not None and not stopping.is_set():
+            _on_main(give_back)
 
     def pick_ics(self, window, panel_rect):
-        import webview
-        paths = window.create_file_dialog(
-            webview.OPEN_DIALOG, directory=str(Path.home() / "Downloads"), allow_multiple=False,
-            file_types=("Calendar files (*.ics;*.ical;*.icalendar;*.ifb)", "All files (*.*)"))
+        # The Open dialog would be under the panel (it floats above other windows),
+        # so the panel steps down a level while the dialog is open.
+        panel = self.window.native if panel_rect and self.window is not None else None
+
+        def before():
+            AppKit.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+            if panel is not None:
+                panel.setLevel_(AppKit.NSNormalWindowLevel)
+        _on_main(before)
+        try:
+            paths = window.create_file_dialog(
+                directory=str(Path.home() / "Downloads"), allow_multiple=False,
+                file_types=("Calendar files (*.ics;*.ical;*.icalendar;*.ifb)", "All files (*.*)"))
+        finally:
+            if panel is not None:
+                _on_main(lambda: panel.setLevel_(AppKit.NSStatusWindowLevel))
         return {"path": str(paths[0])} if paths else {"cancelled": True}
 
     # -- the floating focus timer
