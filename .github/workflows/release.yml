@@ -6,11 +6,18 @@ name: Release
 # out first: download them from that run's page in the Actions tab (Artifacts).
 # Either way the downloads are the same files: Studeck-Mac.dmg and
 # Studeck-Windows.zip (uploaded as they are, not zipped again by GitHub).
+# To build them again for a release that already exists (e.g. one missing a
+# file): Actions tab -> Release -> Run workflow, and type its tag.
 on:
   push:
     tags: ["v*"]
     branches-ignore: [main]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Attach the apps to this existing release (e.g. v0.1.1). Leave empty for a test build."
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -24,7 +31,7 @@ jobs:
             file: Studeck-Mac.dmg
     runs-on: ${{ matrix.os }}
     env:
-      STUDECK_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.0.0' }}
+      STUDECK_VERSION: ${{ inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '0.0.0' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -56,21 +63,26 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      # skip-decompress: keep Studeck-Windows.zip a zip (it would be unpacked).
       - uses: actions/download-artifact@v8
         with:
           name: Studeck-Windows.zip
+          skip-decompress: true
       - uses: actions/download-artifact@v8
         with:
           name: Studeck-Mac.dmg
+          skip-decompress: true
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: |
             Studeck-Windows.zip
             Studeck-Mac.dmg
-          generate_release_notes: true
+          fail_on_unmatched_files: true
+          generate_release_notes: ${{ !inputs.tag }}
