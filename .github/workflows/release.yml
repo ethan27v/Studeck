@@ -4,6 +4,8 @@ name: Release
 # GitHub Release:  git tag v1.2.0 && git push origin v1.2.0
 # Pushing any other branch than main builds them too, without a release, to try
 # out first: download them from that run's page in the Actions tab (Artifacts).
+# Either way the downloads are the same files: Studeck-Mac.dmg and
+# Studeck-Windows.zip (uploaded as they are, not zipped again by GitHub).
 on:
   push:
     tags: ["v*"]
@@ -17,9 +19,9 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            zip: Studeck-Windows.zip
+            file: Studeck-Windows.zip
           - os: macos-latest
-            zip: Studeck-Mac.zip
+            file: Studeck-Mac.dmg
     runs-on: ${{ matrix.os }}
     env:
       STUDECK_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.0.0' }}
@@ -37,15 +39,20 @@ jobs:
       - name: Zip (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path dist/Studeck -DestinationPath ${{ matrix.zip }}
-      - name: Zip (Mac)
+        run: Compress-Archive -Path dist/Studeck -DestinationPath ${{ matrix.file }}
+      - name: Disk image (Mac)
         if: runner.os == 'macOS'
-        # ditto keeps the app bundle's symlinks and signature intact (zip doesn't).
-        run: ditto -c -k --sequesterRsrc --keepParent dist/Studeck.app ${{ matrix.zip }}
-      - uses: actions/upload-artifact@v4
+        # The usual Mac installer: open it and drag Studeck into Applications.
+        # (ditto keeps the app bundle's symlinks and signature intact.)
+        run: |
+          mkdir dmg
+          ditto dist/Studeck.app dmg/Studeck.app
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname Studeck -srcfolder dmg -fs HFS+ -format UDZO -ov ${{ matrix.file }}
+      - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.zip }}
-          path: ${{ matrix.zip }}
+          path: ${{ matrix.file }}
+          archive: false
           if-no-files-found: error
 
   release:
@@ -55,12 +62,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
-          merge-multiple: true
+          name: Studeck-Windows.zip
+      - uses: actions/download-artifact@v8
+        with:
+          name: Studeck-Mac.dmg
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             Studeck-Windows.zip
-            Studeck-Mac.zip
+            Studeck-Mac.dmg
           generate_release_notes: true

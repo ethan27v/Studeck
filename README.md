@@ -44,9 +44,10 @@ Download the latest release from the
     Windows 11 and up-to-date Windows 10. If nothing appears, install the
     *Evergreen Bootstrapper* from
     [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/).
-- **Mac (beta, Apple silicon M1 or newer):** `Studeck-Mac.zip`. Unzip it and
-  drag `Studeck.app` into **Applications** *before* opening it (opened from
-  Downloads, macOS runs it from a temporary copy and *Open at login* won't work).
+- **Mac (beta, Apple silicon M1 or newer):** `Studeck-Mac.dmg`. Open it and
+  drag **Studeck** onto the **Applications** folder next to it, then open
+  Studeck from Applications (opened straight from the disk image, *Open at
+  login* won't work).
   - Studeck isn't signed, so macOS Gatekeeper blocks a plain double-click the
     first time. **Right-click** (or Control-click) `Studeck.app` → **Open** →
     **Open**. On macOS 15 (Sequoia) or newer: double-click it, click **Done**,
@@ -337,8 +338,10 @@ notifications stay (`TOAST_SECONDS`).
   `python -m PyInstaller studeck.spec --noconfirm` builds `dist/Studeck/Studeck.exe`
   (Windows) or `dist/Studeck.app` (Mac). Pushing a `v*` tag
   (`git tag v1.0.0 && git push origin v1.0.0`) builds both on GitHub Actions and
-  attaches `Studeck-Windows.zip` and `Studeck-Mac.zip` to a release
-  (`.github/workflows/release.yml`).
+  attaches `Studeck-Windows.zip` and `Studeck-Mac.dmg` to a release
+  (`.github/workflows/release.yml`). Pushing any other branch than `main`
+  builds the same two files without a release, to try out first: they're
+  under **Artifacts** on that run's page in the **Actions** tab.
 - `index.html` (or `index.html?pin` to keep it open) previews the panel in a
   browser; add `?date=2026-10-20&time=10:40` to preview another day.
 
