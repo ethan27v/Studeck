@@ -28,9 +28,14 @@ if ! new_enough .venv/bin/python; then
     if new_enough "$path"; then PY="$path"; break; fi
   done
   if [ -z "$PY" ]; then
-    echo "Studeck needs Python 3.10 or newer: https://www.python.org/downloads/"
-    alert "Studeck needs Python 3.10 or newer. Install it from python.org (the page opens now), then double-click Start Studeck again."
-    open "https://www.python.org/downloads/"
+    echo "Running Studeck from this folder needs Python 3.10 or newer: https://www.python.org/downloads/"
+    echo "Or download the ready-made app (no Python needed): https://github.com/ethan27v/studeck/releases/latest"
+    choice="$(osascript -e 'button returned of (display dialog "Running Studeck from this folder needs Python 3.10 or newer.\n\nThe easier way: download the ready-made Studeck app, which needs nothing else installed." buttons {"Install Python", "Download the app"} default button 2 with title "Studeck")' 2>/dev/null)"
+    if [ "$choice" = "Install Python" ]; then
+      open "https://www.python.org/downloads/"
+    elif [ -n "$choice" ]; then
+      open "https://github.com/ethan27v/studeck/releases/latest"
+    fi
     exit 1
   fi
   echo "Setting up Studeck with $("$PY" --version 2>&1)..."
