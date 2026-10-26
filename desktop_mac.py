@@ -218,7 +218,7 @@ class Desktop:
             global _carbon
             try:
                 _carbon = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/Carbon.framework/Carbon")
-                _carbon.GetApplicationEventTarget.restype = ctypes.c_void_p
+                _carbon.GetEventDispatcherTarget.restype = ctypes.c_void_p
                 _carbon.InstallEventHandler.argtypes = [ctypes.c_void_p, _HANDLER, ctypes.c_ulong,  # ItemCount
                                                         ctypes.POINTER(_EventTypeSpec), ctypes.c_void_p, ctypes.c_void_p]
                 _carbon.RegisterEventHotKey.argtypes = [ctypes.c_uint32, ctypes.c_uint32, _EventHotKeyID,
@@ -228,24 +228,34 @@ class Desktop:
                 names = {1: "toggle", 2: "quickadd"}
 
                 def handler(_call, event, _data):
-                    hk = _EventHotKeyID()
-                    _carbon.GetEventParameter(event, _fourcc("----"), _fourcc("hkid"), None,
-                                              ctypes.sizeof(hk), None, ctypes.byref(hk))
-                    if hk.id in names:
-                        on_key(names[hk.id])
+                    try:
+                        hk = _EventHotKeyID()
+                        _carbon.GetEventParameter(event, _fourcc("----"), _fourcc("hkid"), None,
+                                                  ctypes.sizeof(hk), None, ctypes.byref(hk))
+                        if hk.signature == _fourcc("Stdk") and hk.id in names:
+                            on_key(names[hk.id])
+                    except Exception:
+                        logging.exception("hotkey handler failed")
                     return 0
 
                 self._handler = _HANDLER(handler)  # keep a reference
                 spec = _EventTypeSpec(_fourcc("keyb"), 5)  # kEventClassKeyboard, kEventHotKeyPressed
-                target = _carbon.GetApplicationEventTarget()
-                _carbon.InstallEventHandler(target, self._handler, 1, ctypes.byref(spec), None, None)
+                # The event dispatcher target (as HotKey / MASShortcut use) gets the
+                # key press in a Cocoa app; the application target may not.
+                target = _carbon.GetEventDispatcherTarget()
+                status = _carbon.InstallEventHandler(target, self._handler, 1, ctypes.byref(spec), None, None)
+                if status != 0:
+                    logging.warning("could not listen for the hotkeys (%s) - use the menu bar icon", status)
+                    return
                 control_option = 0x1000 | 0x0800  # controlKey | optionKey
                 for hk_id, keycode in ((1, 2), (2, 0)):  # kVK_ANSI_D, kVK_ANSI_A
                     ref = ctypes.c_void_p()
                     status = _carbon.RegisterEventHotKey(keycode, control_option, _EventHotKeyID(_fourcc("Stdk"), hk_id),
                                                          target, 0, ctypes.byref(ref))
                     if status != 0:
-                        logging.warning("hotkey %s is taken (%s)", names[hk_id], status)
+                        logging.warning("hotkey %s %s is taken (%s)", names[hk_id], self.keys[names[hk_id]], status)
+                    else:
+                        logging.info("hotkey %s ready", self.keys[names[hk_id]])
                     self._hotkey_refs.append(ref)
             except Exception:
                 logging.exception("could not register the hotkeys - use the menu bar icon")

@@ -265,6 +265,13 @@ def set_review_enabled(on):
     write_summary_state(dict(read_summary_state(), review=bool(on)))
 
 
+def _exit_soon(seconds=3):
+    time.sleep(seconds)
+    logging.warning("still running %s s after Quit - ending it", seconds)
+    logging.shutdown()
+    os._exit(0)
+
+
 def _safe_js(win, code):
     try:
         win.evaluate_js(code)
@@ -516,7 +523,8 @@ class Dashboard:
             pystray.MenuItem(desktop.autostart_label, toggle_autostart, checked=lambda item: desktop.autostart_enabled()),
             pystray.MenuItem("Edit my data file (advanced)", open_data),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Quit", lambda icon, item: self.quit()),
+            # (On a Mac, from a thread: quitting while the menu is still open may not stop the app.)
+            pystray.MenuItem("Quit", in_thread(self.quit) if IS_MAC else lambda icon, item: self.quit()),
         )
 
         def make_icon():
@@ -822,6 +830,9 @@ class Dashboard:
             except Exception:
                 pass
         self.window.destroy()
+        # Make sure it ends: anything still running in the background would
+        # otherwise keep the app (and its tray / menu bar icon) around.
+        threading.Thread(target=_exit_soon, daemon=True).start()
 
     # -- startup (runs in a background thread once the GUI is up)
     def setup(self):
