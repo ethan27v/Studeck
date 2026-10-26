@@ -28,41 +28,65 @@ your weekly classes in once instead. It isn't tied to any one university.
 
 ## Install
 
-### Option 1: download the app (no Python needed)
+You don't need git, Python or a GitHub account: just download the app.
 
-Download the latest release from the
-[**Releases page**](../../releases/latest):
+### Mac (beta, Apple silicon: M1 or newer)
 
-- **Windows 10/11:** `Studeck-Windows.zip`. Unzip it into a folder you'll keep
-  (e.g. `Documents`), open the `Studeck` folder and double-click `Studeck.exe`.
-  Keep the whole folder together: `Studeck.exe` needs the `_internal` folder
-  next to it.
-  - Studeck isn't signed (that costs money), so the first time Windows
-    SmartScreen may say *"Windows protected your PC"*. Click **More info** →
-    **Run anyway**. It only asks once.
-  - The window is drawn by Microsoft's **WebView2 runtime**, which comes with
-    Windows 11 and up-to-date Windows 10. If nothing appears, install the
-    *Evergreen Bootstrapper* from
-    [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/).
-- **Mac (beta, Apple silicon M1 or newer):** `Studeck-Mac.dmg`. Open it and
-  drag **Studeck** onto the **Applications** folder next to it, then open
-  Studeck from Applications (opened straight from the disk image, *Open at
-  login* won't work).
-  - Studeck isn't signed, so macOS Gatekeeper blocks a plain double-click the
-    first time. **Right-click** (or Control-click) `Studeck.app` → **Open** →
-    **Open**. On macOS 15 (Sequoia) or newer: double-click it, click **Done**,
-    then go to **System Settings → Privacy & Security**, scroll down and click
-    **Open Anyway**. It only asks once.
-  - If macOS says the app *"is damaged"*, open Terminal and run
-    `xattr -cr /Applications/Studeck.app`, then open it again.
-  - Intel Macs: use option 2.
+1. Go to the [**latest release**](https://github.com/ethan27v/Studeck/releases/latest)
+   (on this repository's page, that's **Releases** in the right-hand column).
+2. Under **Assets** at the bottom, click **`Studeck-Mac.dmg`** to download it.
+3. Open the downloaded `Studeck-Mac.dmg` (in **Downloads**). In the window that
+   opens, drag the **Studeck** icon onto the **Applications** folder.
+4. Open **Studeck** from your **Applications** folder (not from the window in
+   step 3: run from there, *Open at login* won't work). You can then eject the
+   Studeck disk in Finder's sidebar and delete the `.dmg`.
+5. The first time, macOS says it can't check Studeck for malicious software
+   (Studeck isn't registered with Apple, which costs money). Click **Done**,
+   then open **System Settings → Privacy & Security**, scroll down to
+   *"Studeck" was blocked* and click **Open Anyway**, then **Open Anyway**
+   again and enter your Mac's password. macOS only asks once.
+6. The **setup window** opens (see [First-time setup](#first-time-setup)).
+   Afterwards, open the dashboard with **⌃⌥D** (Control+Option+D) or the
+   Studeck icon in the menu bar at the top of the screen.
 
-The packaged app keeps everything you enter in the `.studeck` folder in your
-home folder (see [Your data and privacy](#your-data-and-privacy)).
+If it doesn't open:
+- *"Studeck is damaged and can't be opened"*: open **Terminal** (in
+  Applications → Utilities), paste `xattr -cr /Applications/Studeck.app`,
+  press Return, and open Studeck again.
+- Not sure which Mac you have? Apple menu  → **About This Mac**: *Chip:
+  Apple M…* works. *Processor: Intel* doesn't yet (developers can use the
+  [run from source](#for-developers-run-from-source) steps below).
 
-### Option 2: run from source (for developers)
+### Windows 10/11
 
-You need **Python 3.10 or newer** from [python.org](https://www.python.org/downloads/)
+1. Go to the [**latest release**](https://github.com/ethan27v/Studeck/releases/latest)
+   (on this repository's page, that's **Releases** in the right-hand column).
+2. Under **Assets** at the bottom, click **`Studeck-Windows.zip`** to download it.
+3. In **Downloads**, right-click `Studeck-Windows.zip` → **Extract All…**, and
+   choose a folder you'll keep, e.g. **Documents**. (Don't run it from inside
+   the zip, and keep the whole `Studeck` folder together: `Studeck.exe` needs
+   the `_internal` folder next to it.)
+4. Open the `Studeck` folder and double-click **`Studeck.exe`**.
+5. The first time, Windows may say *"Windows protected your PC"* (Studeck
+   isn't signed, which costs money). Click **More info** → **Run anyway**.
+   Windows only asks once.
+6. The **setup window** opens (see [First-time setup](#first-time-setup)).
+   Afterwards, open the dashboard by resting the mouse on the very top edge of
+   the screen, or with **Ctrl+Alt+D**.
+
+If nothing appears: the window is drawn by Microsoft's **WebView2 runtime**,
+which comes with Windows 11 and up-to-date Windows 10. Install the *Evergreen
+Bootstrapper* from [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/)
+and try again.
+
+The app keeps everything you enter in the `.studeck` folder in your home
+folder, so updating or reinstalling it never loses your data (see
+[Your data and privacy](#your-data-and-privacy)).
+
+### For developers: run from source
+
+Most people should use the app above. To run Studeck from its code instead,
+you need **Python 3.10 or newer** from [python.org](https://www.python.org/downloads/)
 (on Windows the Microsoft Store version works too; on a Mac, Homebrew's works
 too, but the `python3` that comes with macOS is 3.9, which is too old).
 
@@ -275,9 +299,13 @@ setup window take priority over the same things there.
 
 ## Updating and uninstalling
 
-- **Update (downloaded app):** quit Studeck, download the latest release and
-  replace the old `Studeck` folder (Windows) or `Studeck.app` (Mac) with the new
-  one, in the same place. Your data in `.studeck` stays.
+- **Update (downloaded app):** quit Studeck (tray / menu bar icon → **Quit**),
+  download the latest release and install it the same way:
+  - Mac: open the new `.dmg`, drag Studeck onto Applications and choose **Replace**.
+  - Windows: extract the new zip and replace the old `Studeck` folder with it,
+    in the same place.
+
+  Your data in `.studeck` stays.
 - **Update (from source):** `git pull` in the folder (or download the ZIP again
   and copy your `state.json` and `my-data.js` across), then quit and restart
   Studeck.
