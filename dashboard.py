@@ -108,6 +108,10 @@ FAST_POLL = 0.03             # seconds
 SLOW_POLL = 0.06             # mouse moving, far from the top edge
 IDLE_POLL = 0.15             # mouse still for 2s, far from the top edge
 NEAR_TOP_PX = 200
+# Where the panel, corner timer and notifications start before they're placed:
+# far off screen on Windows. A Mac can't do that (pywebview fails on a window
+# that isn't on any screen), so there they start hidden instead.
+START_HIDDEN = {"hidden": True} if IS_MAC else {"x": -20000, "y": -20000}
 
 APP_NAME = "Studeck"
 ICONS = HERE / "icons"
@@ -559,7 +563,7 @@ class Dashboard:
             "Focus timer",
             url=(WEB_DIR / "mini.html").as_uri(),
             js_api=Api(),
-            width=MINI_SIZE[0], height=MINI_SIZE[1], x=-20000, y=-20000, min_size=(60, 20),
+            width=MINI_SIZE[0], height=MINI_SIZE[1], **START_HIDDEN, min_size=(60, 20),
             frameless=True, easy_drag=False, shadow=False, resizable=False,
             on_top=True, focus=False, background_color="#202020", zoomable=False,
         )
@@ -753,7 +757,7 @@ class Dashboard:
                 "Studeck notification",
                 url=(WEB_DIR / "toast.html").as_uri(),
                 js_api=Api(),
-                width=TOAST_SIZE[0], height=TOAST_SIZE[1], x=-20000, y=-20000, min_size=(60, 20),
+                width=TOAST_SIZE[0], height=TOAST_SIZE[1], **START_HIDDEN, min_size=(60, 20),
                 frameless=True, easy_drag=False, shadow=False, resizable=False,
                 on_top=True, focus=False, background_color="#202020", zoomable=False,
             )
@@ -1378,7 +1382,7 @@ def main():
         APP_NAME,
         url=(WEB_DIR / "index.html").as_uri(),
         js_api=Api(),
-        width=1200, height=240, x=-20000, y=-20000,
+        width=1200, height=240, **START_HIDDEN,
         frameless=True,
         easy_drag=False,
         shadow=False,
