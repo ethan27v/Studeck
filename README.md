@@ -62,14 +62,21 @@ If it doesn't open:
 1. Go to the [**latest release**](https://github.com/ethan27v/Studeck/releases/latest)
    (on this repository's page, that's **Releases** in the right-hand column).
 2. Under **Assets** at the bottom, click **`Studeck-Windows.zip`** to download it.
-3. In **Downloads**, right-click `Studeck-Windows.zip` → **Extract All…**, and
+3. In **Downloads**, right-click `Studeck-Windows.zip` → **Properties**, tick
+   **Unblock** at the bottom and click **OK**. (Windows marks downloads as
+   unknown; unblocking first means it won't stop Studeck from starting.)
+   Then right-click it again → **Extract All…**, and
    choose a folder you'll keep, e.g. **Documents**. (Don't run it from inside
    the zip, and keep the whole `Studeck` folder together: `Studeck.exe` needs
    the `_internal` folder next to it.)
 4. Open the `Studeck` folder and double-click **`Studeck.exe`**.
 5. The first time, Windows may say *"Windows protected your PC"* (Studeck
    isn't signed, which costs money). Click **More info** → **Run anyway**.
-   Windows only asks once.
+   Windows only asks once. If instead **Smart App Control** blocks it, Windows
+   offers no "Run anyway" for unsigned apps: use the
+   [run from source](#for-developers-run-from-source) steps (they run through
+   Python, which is signed). Turning Smart App Control off also works, but
+   Windows can't turn it back on without a reinstall.
 6. The **setup window** opens (see [First-time setup](#first-time-setup)).
    Afterwards, open the dashboard by resting the mouse on the very top edge of
    the screen, or with **Ctrl+Alt+D**.

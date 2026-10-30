@@ -42,6 +42,19 @@ exe = EXE(
 )
 coll = COLLECT(exe, a.binaries, a.datas, name="Studeck")
 
+if not IS_MAC:
+    # Files unzipped from a downloaded zip are marked "from the internet", and .NET
+    # then won't load the app's own DLLs ("Failed to resolve
+    # Python.Runtime.Loader.Initialize"). This lets it load them anyway; the app
+    # also clears the mark itself on start-up (unblock_downloaded_files).
+    with open(os.path.join(DISTPATH, "Studeck", "Studeck.exe.config"), "w", encoding="utf-8") as f:
+        f.write('<?xml version="1.0" encoding="utf-8"?>\n'
+                "<configuration>\n"
+                "  <runtime>\n"
+                '    <loadFromRemoteSources enabled="true"/>\n'
+                "  </runtime>\n"
+                "</configuration>\n")
+
 if IS_MAC:
     app = BUNDLE(
         coll,

@@ -82,6 +82,37 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
 )
 
+
+def unblock_downloaded_files():
+    """Clear Windows' "downloaded from the internet" mark from the app's own files.
+
+    Every file unzipped from a downloaded Studeck-Windows.zip carries that mark (a
+    hidden Zone.Identifier stream), and .NET then refuses to load the app's DLLs:
+    "Failed to resolve Python.Runtime.Loader.Initialize". This does what ticking
+    Unblock in a file's Properties does, before anything loads .NET.
+    (Studeck.exe.config, from studeck.spec, also lets .NET load them regardless.)
+    """
+    probe = HERE / "pythonnet" / "runtime" / "Python.Runtime.dll"
+    marked = lambda path: os.path.exists(f"{path}:Zone.Identifier")
+    if not (marked(probe) or marked(sys.executable)):
+        return
+    cleared = failed = 0
+    for path in [Path(sys.executable), *HERE.rglob("*")]:
+        if path.is_file() and marked(path):
+            try:
+                os.remove(f"{path}:Zone.Identifier")
+                cleared += 1
+            except OSError:
+                failed += 1
+    logging.info("unblocked %d downloaded files (%d couldn't be changed)", cleared, failed)
+
+
+if FROZEN and not IS_MAC:
+    try:
+        unblock_downloaded_files()
+    except Exception:
+        logging.exception("couldn't unblock the app's files")
+
 if IS_MAC:
     import desktop_mac as _desktop_module
 else:
